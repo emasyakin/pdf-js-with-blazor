@@ -1,0 +1,27 @@
+﻿@page "/pdfjs"
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<PageTitle>PDF JS</PageTitle>
+
+<div>
+  <button id="prev">Previous</button>
+  <button id="next">Next</button>
+  &nbsp; &nbsp;
+  <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
+</div>
+
+<canvas @ref="canvasElement" id="the-canvas"></canvas>
+
+@code {
+    private ElementReference canvasElement;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync(
+                "pdfJSViewerFunctions.init", canvasElement, "sample.pdf");
+        }
+    }
+}
