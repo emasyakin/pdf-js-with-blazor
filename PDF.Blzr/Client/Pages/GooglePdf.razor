@@ -1,5 +1,53 @@
-﻿@page "/googlepdf"
+﻿@page "/googlepdf/{filename}"
+@inject NavigationManager NavigationManager
+@implements IDisposable
 
 <PageTitle>Google PDF</PageTitle>
 
-<iframe src="https://docs.google.com/gview?url=https://research.nhm.org/pdfs/10840/10840-001.pdf&embedded=true" style="width: 600px; height: 600px;"></iframe>
+<iframe src="https://docs.google.com/gview?url=@(AbsolutePathToFile ?? string.Empty)&embedded=true" style="width: 600px; height: 600px;"></iframe>
+
+@code {
+    private const string PdfFilesDirectoryName = "pdf-files";
+
+    private string? AbsolutePathToFile;
+
+    [Parameter]
+    public string? filename { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
+        SetFilePath();
+    }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            NavigationManager.LocationChanged += OnNavigationManagerOnLocationChanged;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void OnNavigationManagerOnLocationChanged(object? o, LocationChangedEventArgs locationChangedEventArgs)
+    {
+        if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
+        SetFilePath();
+        StateHasChanged();
+    }
+
+    private void SetFilePath()
+    {
+        var uriPart = new Uri(NavigationManager.BaseUri).GetLeftPart(UriPartial.Authority);
+        AbsolutePathToFile = $"{uriPart}/{PdfFilesDirectoryName}/{filename ?? string.Empty}";
+    }
+
+    void IDisposable.Dispose()
+    {
+        if (NavigationManager != null)
+        {
+            NavigationManager.LocationChanged -= OnNavigationManagerOnLocationChanged;
+        }
+    }
+}

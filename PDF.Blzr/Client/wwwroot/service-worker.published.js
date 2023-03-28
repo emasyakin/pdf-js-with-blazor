@@ -51,7 +51,10 @@ async function onFetch(event) {
     if (event.request.method === 'GET') {
         // For all navigation requests, try to serve index.html from cache
         // If you need some URLs to be server-rendered, edit the following check to exclude those URLs
-        const shouldServeIndexHtml = event.request.mode === 'navigate' && event.request.url && !event.request.url.toLowerCase().endsWith('.pdf');
+        const shouldServeIndexHtml = event.request.mode === 'navigate' 
+                && event.request.url 
+                // Do not cache PDF files in wwwroot/pdf-files, these should be handled as direct content
+                && !(event.request.url.toLowerCase().endsWith('.pdf') && event.request.url.toLowerCase().includes('/pdf-files/'));
 
         const request = shouldServeIndexHtml ? 'index.html' : event.request;
         const cache = await caches.open(cacheName);

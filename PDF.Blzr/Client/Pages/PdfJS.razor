@@ -1,27 +1,72 @@
-﻿@page "/pdfjs"
-@using Microsoft.JSInterop
+﻿@page "/pdfjs/{filename}"
 @inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@implements IDisposable
 
 <PageTitle>PDF JS</PageTitle>
 
 <div>
-  <button id="prev">Previous</button>
-  <button id="next">Next</button>
-  &nbsp; &nbsp;
-  <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
+    <button id="prev">Previous</button>
+    <button id="next">Next</button>
+    &nbsp; &nbsp;
+    <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
 </div>
 
-<canvas @ref="canvasElement" id="the-canvas"></canvas>
+<div id="canvas-holder">
+    <canvas @ref="canvasElement" id="the-canvas"></canvas>
+</div>
+
 
 @code {
+
+    private const string PdfFilesDirectoryName = "pdf-files";
+
+    private string? AbsolutePathToFile;
+
+    [Parameter]
+    public string? filename { get; set; }
+
     private ElementReference canvasElement;
+
+    protected override void OnInitialized()
+    {
+        NavigationManager.LocationChanged += OnNavigationManagerOnLocationChanged;
+
+        if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
+        SetFilePath();
+    }
+
+    private async void OnNavigationManagerOnLocationChanged(object? sender, LocationChangedEventArgs args)
+    {
+        if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
+        SetFilePath();
+
+        if (NavigationManager.Uri.Contains("pdfjs", StringComparison.OrdinalIgnoreCase))
+        {
+            await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", canvasElement, AbsolutePathToFile);
+        }
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await JS.InvokeVoidAsync(
-                "pdfJSViewerFunctions.init", canvasElement, "sample.pdf");
+                "pdfJSViewerFunctions.init", canvasElement, AbsolutePathToFile);
+        }
+    }
+
+    private void SetFilePath()
+    {
+        var uriPart = new Uri(NavigationManager.BaseUri).GetLeftPart(UriPartial.Authority);
+        AbsolutePathToFile = $"{uriPart}/{PdfFilesDirectoryName}/{filename}";
+    }
+
+    void IDisposable.Dispose()
+    {
+        if (NavigationManager != null)
+        {
+            NavigationManager.LocationChanged -= OnNavigationManagerOnLocationChanged;
         }
     }
 }

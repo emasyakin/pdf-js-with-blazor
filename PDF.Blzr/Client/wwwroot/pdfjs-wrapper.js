@@ -1,5 +1,27 @@
-﻿window.pdfJSViewerFunctions = {
+﻿function recreateNode(el, withChildren) {
+  if (withChildren) {
+    el.parentNode.replaceChild(el.cloneNode(true), el);
+  }
+  else {
+    var newEl = el.cloneNode(false);
+    while (el.hasChildNodes()) newEl.appendChild(el.firstChild);
+    el.parentNode.replaceChild(newEl, el);
+  }
+}
+
+var pdfDoc = null,
+    pageNum = 1,
+    pageRendering = false,
+    pageNumPending = null,
+    scale = 0.8,
+    canvas = null,
+    ctx = null,
+    currentPage = null
+
+window.pdfJSViewerFunctions = {
     init: function (element, url) {
+        recreateNode(document.getElementById("next"));
+        recreateNode(document.getElementById("prev"));
 
         // Loaded via <script> tag, create shortcut to access PDF.js exports.
         var pdfjsLib = window['pdfjs-dist/build/pdf'];
@@ -7,12 +29,26 @@
         // The workerSrc property shall be specified.
         pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
 
-        var pdfDoc = null,
-            pageNum = 1,
-            pageRendering = false,
-            pageNumPending = null,
-            scale = 0.8,
-            canvas = element,
+        if (currentPage) {
+            currentPage.cleanup();
+            pageRendering = false;
+        }
+
+        if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+        }
+
+        if (pdfDoc) {
+            pdfDoc.destroy();
+        }
+
+        pageNum = 1;
+        pageRendering = false;
+        pageNumPending = null;
+        scale = 0.8;
+
+        canvas = element,
             ctx = canvas.getContext('2d');
 
         function renderPage(num) {
@@ -29,6 +65,7 @@
                     viewport: viewport
                 };
                 var renderTask = page.render(renderContext);
+                currentPage = page;
 
                 // Wait for rendering to finish
                 renderTask.promise.then(function () {
@@ -69,9 +106,24 @@
             pageNum++;
             queueRenderPage(pageNum);
         }
+
         document.getElementById('next').addEventListener('click', onNextPage);
 
         pdfjsLib.getDocument(url).promise.then(function (pdfDoc_) {
+            if (currentPage) {
+                currentPage.cleanup();
+                pageRendering = false;
+            }
+
+            if (pdfDoc) {
+                pdfDoc.destroy();
+            }
+
+            if (ctx) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.beginPath();
+            }
+
             pdfDoc = pdfDoc_;
             document.getElementById('page_count').textContent = pdfDoc.numPages;
 

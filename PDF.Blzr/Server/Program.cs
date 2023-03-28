@@ -37,7 +37,13 @@ namespace PDF.Blzr
 
             app.MapRazorPages();
             app.MapControllers();
+            
             app.MapFallbackToFile("index.html");
+
+            // This is required to route requests with . (dot) in param name.
+            // Details here: https://learn.microsoft.com/en-us/aspnet/core/blazor/fundamentals/routing?view=aspnetcore-7.0#routing-with-urls-that-contain-dots
+            app.MapFallbackToFile("/pdfjs/{filename}", "index.html");
+            app.MapFallbackToFile("/googlepdf/{filename}", "index.html");
 
             app.Run();
         }
