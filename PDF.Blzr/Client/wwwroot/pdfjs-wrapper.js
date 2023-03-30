@@ -1,134 +1,143 @@
-﻿function recreateNode(el, withChildren) {
+// pdfjs-wrapper.js
+
+function recreateNode(el, withChildren) {
   if (withChildren) {
     el.parentNode.replaceChild(el.cloneNode(true), el);
-  }
-  else {
-    var newEl = el.cloneNode(false);
+  } else {
+    const newEl = el.cloneNode(false);
     while (el.hasChildNodes()) newEl.appendChild(el.firstChild);
     el.parentNode.replaceChild(newEl, el);
   }
 }
 
-var pdfDoc = null,
-    pageNum = 1,
-    pageRendering = false,
-    pageNumPending = null,
-    scale = 0.8,
-    canvas = null,
-    ctx = null,
-    currentPage = null
+const pdfJSViewerFunctions = {
+  state: {
+    pdfDoc: null,
+    pageNum: 1,
+    pageRendering: false,
+    pageNumPending: null,
+    scale: 0.8,
+    canvas: null,
+    ctx: null,
+    currentPage: null,
+  },
 
-window.pdfJSViewerFunctions = {
-    init: function (element, url) {
-        recreateNode(document.getElementById("next"));
-        recreateNode(document.getElementById("prev"));
+  init(element, url) {
+    this.setupCanvas(element);
+    this.setupPdfJsLib();
+    this.loadDocument(url);
+  },
 
-        // Loaded via <script> tag, create shortcut to access PDF.js exports.
-        var pdfjsLib = window['pdfjs-dist/build/pdf'];
+  setupCanvas(element) {
+    this.state.canvas = element;
+    this.state.ctx = this.state.canvas.getContext('2d');
 
-        // The workerSrc property shall be specified.
-        pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+    this.state.canvas.style.overflowY = 'scroll';
+    this.state.canvas.addEventListener('scroll', this.throttle(this.onScroll.bind(this), 200));
+  },
 
-        if (currentPage) {
-            currentPage.cleanup();
-            pageRendering = false;
+  setupPdfJsLib() {
+    const pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+  },
+
+  loadDocument(url) {
+    const { pdfjsLib } = window['pdfjs-dist/build/pdf'];
+
+    pdfjsLib.getDocument(url).promise.then((pdfDoc_) => {
+      if (this.state.currentPage) {
+        this.state.currentPage.cleanup();
+        this.state.pageRendering = false;
+      }
+
+      if (this.state.pdfDoc) {
+        this.state.pdfDoc.destroy();
+      }
+
+      if (this.state.ctx) {
+        this.state.ctx.clearRect(0, 0, this.state.canvas.width, this.state.canvas.height);
+        this.state.ctx.beginPath();
+      }
+
+      this.state.pdfDoc = pdfDoc_;
+      document.getElementById('page_count').textContent = this.state.pdfDoc.numPages;
+
+      this.renderPage(this.state.pageNum);
+    });
+  },
+
+  renderPage(num) {
+    this.state.pageRendering = true;
+
+    this.state.pdfDoc.getPage(num).then((page) => {
+      const viewport = page.getViewport({ scale: this.state.scale });
+      this.state.canvas.height = viewport.height;
+      this.state.canvas.width = viewport.width;
+
+      const renderContext = {
+        canvasContext: this.state.ctx,
+        viewport: viewport,
+      };
+
+      const renderTask = page.render(renderContext);
+      this.state.currentPage = page;
+
+      renderTask.promise.then(() => {
+        this.state.pageRendering = false;
+        if (this.state.pageNumPending !== null) {
+          this.renderPage(this.state.pageNumPending);
+          this.state.pageNumPending = null;
         }
+      });
+    });
 
-        if (ctx) {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.beginPath();
-        }
+    document.getElementById('page_num').textContent = num;
+  },
 
-        if (pdfDoc) {
-            pdfDoc.destroy();
-        }
-
-        pageNum = 1;
-        pageRendering = false;
-        pageNumPending = null;
-        scale = 0.8;
-
-        canvas = element,
-            ctx = canvas.getContext('2d');
-
-        function renderPage(num) {
-            pageRendering = true;
-            // Using promise to fetch the page
-            pdfDoc.getPage(num).then(function (page) {
-                var viewport = page.getViewport({ scale: scale });
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-
-                // Render PDF page into canvas context
-                var renderContext = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-                var renderTask = page.render(renderContext);
-                currentPage = page;
-
-                // Wait for rendering to finish
-                renderTask.promise.then(function () {
-                    pageRendering = false;
-                    if (pageNumPending !== null) {
-                        // New page rendering is pending
-                        renderPage(pageNumPending);
-                        pageNumPending = null;
-                    }
-                });
-            });
-
-            // Update page counters
-            document.getElementById('page_num').textContent = num;
-        }
-
-        function queueRenderPage(num) {
-            if (pageRendering) {
-                pageNumPending = num;
-            } else {
-                renderPage(num);
-            }
-        }
-
-        function onPrevPage() {
-            if (pageNum <= 1) {
-                return;
-            }
-            pageNum--;
-            queueRenderPage(pageNum);
-        }
-        document.getElementById('prev').addEventListener('click', onPrevPage);
-
-        function onNextPage() {
-            if (pageNum >= pdfDoc.numPages) {
-                return;
-            }
-            pageNum++;
-            queueRenderPage(pageNum);
-        }
-
-        document.getElementById('next').addEventListener('click', onNextPage);
-
-        pdfjsLib.getDocument(url).promise.then(function (pdfDoc_) {
-            if (currentPage) {
-                currentPage.cleanup();
-                pageRendering = false;
-            }
-
-            if (pdfDoc) {
-                pdfDoc.destroy();
-            }
-
-            if (ctx) {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.beginPath();
-            }
-
-            pdfDoc = pdfDoc_;
-            document.getElementById('page_count').textContent = pdfDoc.numPages;
-
-            // Initial/first page rendering
-            renderPage(pageNum);
-        });
+  queueRenderPage(num) {
+    if (this.state.pageRendering) {
+      this.state.pageNumPending = num;
+    } else {
+      this.renderPage(num);
     }
-}
+  },
+
+  onPrevPage() {
+    if (this.state.pageNum <= 1) {
+      return;
+    }
+    this.state.pageNum--;
+    this.queueRenderPage(this.state.pageNum);
+  },
+
+  onNextPage() {
+    if (this.state.pageNum >= this.state.pdfDoc.numPages) {
+      return;
+    }
+    this.state.pageNum++;
+    this.queueRenderPage(this.state.pageNum);
+  },
+
+  onScroll() {
+    if (this.state.canvas.scrollTop + this.state.canvas.clientHeight >= this.state.canvas.scrollHeight) {
+      this.onNextPage();
+    }
+    else if (this.state.canvas.scrollTop === 0) {
+      this.onPrevPage();
+    }
+  },
+
+  throttle(func, delay) {
+    let lastCall = 0;
+    return function (...args) {
+      const now = new Date().getTime();
+      if (now - lastCall < delay) {
+        return;
+      }
+      lastCall = now;
+      return func.apply(this, args);
+    };
+  },
+};
+
+window.pdfJSViewerFunctions = pdfJSViewerFunctions;
