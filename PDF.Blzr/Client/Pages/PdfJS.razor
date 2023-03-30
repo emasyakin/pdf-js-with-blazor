@@ -4,18 +4,9 @@
 @implements IDisposable
 
 <PageTitle>PDF JS</PageTitle>
-
-<div>
-    <button id="prev">Previous</button>
-    <button id="next">Next</button>
-    &nbsp; &nbsp;
-    <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
+<div @ref="canvasWrapper" id="pdf-container">
+    <canvas id="pdf-canvas"></canvas>
 </div>
-
-<div id="canvas-holder">
-    <canvas @ref="canvasElement" id="the-canvas"></canvas>
-</div>
-
 
 @code {
 
@@ -26,14 +17,19 @@
     [Parameter]
     public string? filename { get; set; }
 
-    private ElementReference canvasElement;
+    private ElementReference canvasWrapper;
 
-    protected override void OnInitialized()
+    private CancellationTokenSource cancellationTokenSource;
+
+    protected override async Task OnInitializedAsync()
     {
+        cancellationTokenSource = new CancellationTokenSource();
         NavigationManager.LocationChanged += OnNavigationManagerOnLocationChanged;
 
         if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
         SetFilePath();
+
+        await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", cancellationTokenSource.Token, canvasWrapper, AbsolutePathToFile);
     }
 
     private async void OnNavigationManagerOnLocationChanged(object? sender, LocationChangedEventArgs args)
@@ -41,9 +37,11 @@
         if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
         SetFilePath();
 
+        await JS.InvokeVoidAsync("pdfJSViewerFunctions.cancelRendering", cancellationTokenSource.Token);
+
         if (NavigationManager.Uri.Contains("pdfjs", StringComparison.OrdinalIgnoreCase))
         {
-            await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", canvasElement, AbsolutePathToFile);
+            await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", cancellationTokenSource.Token, canvasWrapper, AbsolutePathToFile);
         }
     }
 
@@ -51,8 +49,7 @@
     {
         if (firstRender)
         {
-            await JS.InvokeVoidAsync(
-                "pdfJSViewerFunctions.init", canvasElement, AbsolutePathToFile);
+            await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", cancellationTokenSource.Token, canvasWrapper, AbsolutePathToFile);
         }
     }
 
@@ -62,11 +59,10 @@
         AbsolutePathToFile = $"{uriPart}/{PdfFilesDirectoryName}/{filename}";
     }
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
-        if (NavigationManager != null)
-        {
-            NavigationManager.LocationChanged -= OnNavigationManagerOnLocationChanged;
-        }
+        NavigationManager.LocationChanged -= OnNavigationManagerOnLocationChanged;
+        cancellationTokenSource.Cancel();
+        cancellationTokenSource.Dispose();
     }
 }

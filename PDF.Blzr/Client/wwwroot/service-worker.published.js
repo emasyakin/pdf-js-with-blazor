@@ -54,7 +54,8 @@ async function onFetch(event) {
         const shouldServeIndexHtml = event.request.mode === 'navigate' 
                 && event.request.url 
                 // Do not cache PDF files in wwwroot/pdf-files, these should be handled as direct content
-                && !(event.request.url.toLowerCase().endsWith('.pdf') && event.request.url.toLowerCase().includes('/pdf-files/'));
+                // This check now also covers <schema>://<host>/pdfjs/sample-2.pdf to guarantee reload.
+                && !(event.request.url.toLowerCase().endsWith('.pdf') && event.request.url.toLowerCase().includes('/pdf') event.request.url.toLowerCase().includes('/pdf'));
 
         const request = shouldServeIndexHtml ? 'index.html' : event.request;
         const cache = await caches.open(cacheName);
