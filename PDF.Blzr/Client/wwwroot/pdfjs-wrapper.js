@@ -20,11 +20,12 @@ const pdfJSViewerFunctions = {
     canvas: null,
     ctx: null,
     currentPage: null,
+    pdfJsLib: null
   },
 
   init(element, url) {
-    this.setupCanvas(element);
     this.setupPdfJsLib();
+    this.setupCanvas(element);
     this.loadDocument(url);
   },
 
@@ -37,14 +38,12 @@ const pdfJSViewerFunctions = {
   },
 
   setupPdfJsLib() {
-    const pdfjsLib = window['pdfjs-dist/build/pdf'];
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
+    pdfJSViewerFunctions.state.pdfjsLib = window['pdfjs-dist/build/pdf'];
+    pdfJSViewerFunctions.state.pdfjsLib.GlobalWorkerOptions.workerSrc = '//mozilla.github.io/pdf.js/build/pdf.worker.js';
   },
 
   loadDocument(url) {
-    const { pdfjsLib } = window['pdfjs-dist/build/pdf'];
-
-    pdfjsLib.getDocument(url).promise.then((pdfDoc_) => {
+    pdfJSViewerFunctions.state.pdfjsLib.getDocument(url).promise.then((pdfDoc_) => {
       if (this.state.currentPage) {
         this.state.currentPage.cleanup();
         this.state.pageRendering = false;
