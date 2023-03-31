@@ -4,18 +4,9 @@
 @implements IDisposable
 
 <PageTitle>PDF JS</PageTitle>
-
-<div>
-    <button id="prev">Previous</button>
-    <button id="next">Next</button>
-    &nbsp; &nbsp;
-    <span>Page: <span id="page_num"></span> / <span id="page_count"></span></span>
+<div @ref="canvasWrapper" id="pdf-container">
+    <canvas id="pdf-canvas"></canvas>
 </div>
-
-<div id="canvas-holder">
-    <canvas @ref="canvasElement" id="the-canvas"></canvas>
-</div>
-
 
 @code {
 
@@ -26,7 +17,7 @@
     [Parameter]
     public string? filename { get; set; }
 
-    private ElementReference canvasElement;
+    private ElementReference canvasWrapper;
 
     protected override void OnInitialized()
     {
@@ -43,7 +34,7 @@
 
         if (NavigationManager.Uri.Contains("pdfjs", StringComparison.OrdinalIgnoreCase))
         {
-            await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", canvasElement, AbsolutePathToFile);
+            await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", canvasWrapper, AbsolutePathToFile);
         }
     }
 
@@ -52,7 +43,7 @@
         if (firstRender)
         {
             await JS.InvokeVoidAsync(
-                "pdfJSViewerFunctions.init", canvasElement, AbsolutePathToFile);
+                "pdfJSViewerFunctions.init", canvasWrapper, AbsolutePathToFile);
         }
     }
 
