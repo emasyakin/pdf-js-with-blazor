@@ -48,14 +48,14 @@ async function onActivate(event) {
 async function onFetch(event) {
     let cachedResponse = null;
 
-    if (event.request.method === 'GET') {
+    if (event && event.request && event.request.method === 'GET') {
         // For all navigation requests, try to serve index.html from cache
         // If you need some URLs to be server-rendered, edit the following check to exclude those URLs
         const shouldServeIndexHtml = event.request.mode === 'navigate' 
                 && event.request.url 
                 // Do not cache PDF files in wwwroot/pdf-files, these should be handled as direct content
                 // This check now also covers <schema>://<host>/pdfjs/sample-2.pdf to guarantee reload.
-                && !(event.request.url.toLowerCase().endsWith('.pdf') && event.request.url.toLowerCase().includes('/pdf') event.request.url.toLowerCase().includes('/pdf'));
+                && !(event.request.url.toLowerCase().endsWith('.pdf') && event.request.url.toLowerCase().includes('/pdf'));
 
         const request = shouldServeIndexHtml ? 'index.html' : event.request;
         const cache = await caches.open(cacheName);
