@@ -99,3 +99,11 @@ a, .btn-link {
     .loading-progress-text:after {
         content: var(--blazor-load-percentage-text, "Loading");
     }
+
+.pdf-canvas {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+}

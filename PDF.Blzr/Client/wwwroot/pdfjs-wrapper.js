@@ -26,6 +26,7 @@ const pdfJSViewerFunctions = {
         this.state.pdfjsLib = window["pdfjs-dist/build/pdf"];
         this.state.pdfjsLib.GlobalWorkerOptions.workerSrc =
             "//mozilla.github.io/pdf.js/build/pdf.worker.js";
+             
     },
 
     setupCanvasWrapper(canvasWrapper) {
@@ -57,6 +58,7 @@ const pdfJSViewerFunctions = {
 
     async renderPage(num) {
         const canvas = document.createElement("canvas");
+        canvas.className = "pdf-canvas";
         this.state.canvasWrapper.appendChild(canvas);
 
         const page = await this.state.pdfDoc.getPage(num);
@@ -73,6 +75,7 @@ const pdfJSViewerFunctions = {
         };
 
         canvas.getContext("2d").scale(window.devicePixelRatio, window.devicePixelRatio);
+        
 
         // Check if the page is already rendering
         // this.cancelRendering();
@@ -88,3 +91,14 @@ const pdfJSViewerFunctions = {
 };
 
 window.pdfJSViewerFunctions = pdfJSViewerFunctions;
+
+        
+// Configure PDF.js viewer options
+var options = {
+    viewer: {
+        pageMode: "single",
+    },
+};
+
+// Set options on PDF.js viewer
+window.PDFViewerApplicationOptions = options;
