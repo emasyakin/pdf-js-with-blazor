@@ -37,6 +37,11 @@
         if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
         SetFilePath();
 
+        if (cancellationTokenSource?.IsCancellationRequested == true)
+        {
+            return;
+        }
+
         await JS.InvokeVoidAsync("pdfJSViewerFunctions.cancelRendering", cancellationTokenSource.Token);
 
         if (NavigationManager.Uri.Contains("pdfjs", StringComparison.OrdinalIgnoreCase))
