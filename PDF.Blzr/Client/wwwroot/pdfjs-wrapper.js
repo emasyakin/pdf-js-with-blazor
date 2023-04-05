@@ -9,6 +9,7 @@ const pdfJSViewerFunctions = {
     },
 
     async init(canvasWrapper, url) {
+        await this.cancelRendering();
         this.setupPdfJsLib();
         this.setupCanvasWrapper(canvasWrapper);
         await this.loadDocument(url);

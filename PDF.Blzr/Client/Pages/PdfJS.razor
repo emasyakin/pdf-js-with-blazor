@@ -29,13 +29,15 @@
         if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
         SetFilePath();
 
-        await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", cancellationTokenSource.Token, canvasWrapper, AbsolutePathToFile);
+        //await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", cancellationTokenSource.Token, canvasWrapper, AbsolutePathToFile);
     }
 
     private async void OnNavigationManagerOnLocationChanged(object? sender, LocationChangedEventArgs args)
     {
         if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
         SetFilePath();
+
+
 
         if (cancellationTokenSource?.IsCancellationRequested == true)
         {
