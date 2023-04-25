@@ -1,13 +1,9 @@
 ﻿@page "/pdfjs/{filename}"
 @inject IJSRuntime JS
 @inject NavigationManager NavigationManager
-@implements IDisposable
 
 <PageTitle>PDF JS</PageTitle>
-<div @ref="canvasWrapper" id="pdf-container" class="pdf-container">
-    <canvas id="pdf-canvas" class="pdf-canvas"></canvas>
-</div>
-
+<iframe src="pdfjs-dist/web/viewer.html?file=@AbsolutePathToFile" height="98%" width="100%" frameborder="0" />
 @code {
 
     private const string PdfFilesDirectoryName = "pdf-files";
@@ -17,59 +13,21 @@
     [Parameter]
     public string? filename { get; set; }
 
-    private ElementReference canvasWrapper;
-
-    private CancellationTokenSource cancellationTokenSource;
+    protected override void OnParametersSet()
+    {
+        SetFilePath();
+        StateHasChanged();
+        base.OnParametersSet();
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        cancellationTokenSource = new CancellationTokenSource();
-        NavigationManager.LocationChanged += OnNavigationManagerOnLocationChanged;
-
-        if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
         SetFilePath();
-
-        //await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", cancellationTokenSource.Token, canvasWrapper, AbsolutePathToFile);
-    }
-
-    private async void OnNavigationManagerOnLocationChanged(object? sender, LocationChangedEventArgs args)
-    {
-        if (string.IsNullOrEmpty(NavigationManager?.BaseUri)) return;
-        SetFilePath();
-
-
-
-        if (cancellationTokenSource?.IsCancellationRequested == true)
-        {
-            return;
-        }
-
-        await JS.InvokeVoidAsync("pdfJSViewerFunctions.cancelRendering", cancellationTokenSource.Token);
-
-        if (NavigationManager.Uri.Contains("pdfjs", StringComparison.OrdinalIgnoreCase))
-        {
-            await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", cancellationTokenSource.Token, canvasWrapper, AbsolutePathToFile);
-        }
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("pdfJSViewerFunctions.init", cancellationTokenSource.Token, canvasWrapper, AbsolutePathToFile);
-        }
     }
 
     private void SetFilePath()
     {
         var uriPart = new Uri(NavigationManager.BaseUri).GetLeftPart(UriPartial.Authority);
         AbsolutePathToFile = $"{uriPart}/{PdfFilesDirectoryName}/{filename}";
-    }
-
-    public void Dispose()
-    {
-        NavigationManager.LocationChanged -= OnNavigationManagerOnLocationChanged;
-        cancellationTokenSource.Cancel();
-        cancellationTokenSource.Dispose();
     }
 }

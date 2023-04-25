@@ -23,6 +23,7 @@ a, .btn-link {
 }
 
 .content {
+    height: 100vh;
     padding-top: 1.1rem;
 }
 
