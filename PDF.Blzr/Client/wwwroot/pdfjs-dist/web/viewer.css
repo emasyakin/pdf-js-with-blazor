@@ -2689,3 +2689,8 @@ dialog :link {
     display: none;
   }
 }
+
+#viewerExtraScrollPlaceholder {
+    background-color: rgba(42, 42, 46, 1);
+    height: 300px;
+}
