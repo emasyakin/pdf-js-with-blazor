@@ -2,7 +2,7 @@
 
 <PageTitle>Index</PageTitle>
 
-<h1>Hello, world 2!</h1>
+<h1>Hello, world @TestString!</h1>
 <p>
     <a href="googlepdf/sample-1.pdf">View PDF with a Google Viewer (separate iframe) 1</a>
 </p>
@@ -21,3 +21,6 @@
 <p>
     <a href="pdf-files/sample-2.pdf">View PDF directly in browser 2</a>
 </p>
+@code {
+        protected const string TestString = "test-string test";
+}
